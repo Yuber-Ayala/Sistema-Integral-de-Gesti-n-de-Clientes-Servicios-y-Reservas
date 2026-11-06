@@ -191,3 +191,71 @@ class Reserva:
         self.__estado = "Cancelada"
         return "Reserva cancelada correctamente."
 
+
+
+# ==============================================================================
+# 5. SIMULACIÓN DE 10 OPERACIONES COMPLETAS (PRUEBA DE ESTABILIDAD)
+# ==============================================================================
+
+if __name__ == "__main__":
+    print("=================================================================")
+    print("   SISTEMA DE GESTIÓN SOFTWARE FJ - SIMULACIÓN DE OPERACIONES   ")
+    print("=================================================================\n")
+
+    # Listas internas para almacenamiento en memoria (sin base de datos)
+    clientes_registrados = []
+    servicios_registrados = []
+    reservas_registradas = []
+
+    # Operación 1: Registro exitoso de Cliente 1
+    print("--- Operación 1: Registro correcto de Cliente 1 ---")
+    try:
+        c1 = Cliente("C01", "Yuber Ayala", "yuber@correo.com", "3101234567")
+        clientes_registrados.append(c1)
+        registrar_log(f"Cliente registrado: {c1.obtener_resumen()}")
+        print(f"Éxito: {c1.obtener_resumen()}")
+    except SoftwareFJError as e:
+        registrar_log(f"Error en Op 1: {e}", es_error=True)
+        print(f"Error capturado: {e}")
+
+    # Operación 2: Intento de registro de Cliente con correo inválido (Fallo controlado)
+    print("\n--- Operación 2: Registro de Cliente con correo erróneo ---")
+    try:
+        c2 = Cliente("C02", "Pedro Gómez", "correo_sin_arroba_com", "3009876543")
+        clientes_registrados.append(c2)
+    except SoftwareFJError as e:
+        registrar_log(f"Error en Op 2 (Captura esperada): {e}", es_error=True)
+        print(f"Excepción capturada con éxito: {e}")
+
+    # Operación 3: Creación exitosa de Servicio 1 (Reserva de Sala)
+    print("\n--- Operación 3: Registro de Servicio (Reserva de Sala) ---")
+    try:
+        s1 = ReservaSala("S01", "Sala VIP Ejecutivo", costo_base=50.0, capacidad_personas=25)
+        servicios_registrados.append(s1)
+        registrar_log(f"Servicio registrado: {s1.obtener_resumen()}")
+        print(f"Éxito: {s1.obtener_resumen()}")
+    except SoftwareFJError as e:
+        registrar_log(f"Error en Op 3: {e}", es_error=True)
+        print(f"Error capturado: {e}")
+
+    # Operación 4: Creación errónea de Servicio con costo negativo (Fallo controlado)
+    print("\n--- Operación 4: Registro de Servicio con costo negativo ---")
+    try:
+        s_invalid = AlquilerEquipo("S02", "Proyector 4K", costo_base=-15.0)
+    except SoftwareFJError as e:
+        registrar_log(f"Error en Op 4 (Captura esperada): {e}", es_error=True)
+        print(f"Excepción capturada con éxito: {e}")
+
+    # Operación 5: Creación exitosa de Servicio 2 (Alquiler de Equipo) y Servicio 3 (Asesoría)
+    print("\n--- Operación 5: Registro de Servicio de Alquiler de Equipo y Asesoría ---")
+    try:
+        s2 = AlquilerEquipo("S02", "Servidor Portátil de Pruebas", costo_base=30.0, requiere_deposito=True)
+        s3 = AsesoriaEspecializada("S03", "Consultoría en Arquitectura Cloud", costo_base=80.0, nivel_consultor="SENIOR")
+        servicios_registrados.extend([s2, s3])
+        print(f"Éxito: {s2.obtener_resumen()}")
+        print(f"Éxito: {s3.obtener_resumen()}")
+    except SoftwareFJError as e:
+        registrar_log(f"Error en Op 5: {e}", es_error=True)
+        print(f"Error capturado: {e}")
+
+
