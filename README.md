@@ -258,4 +258,42 @@ if __name__ == "__main__":
         registrar_log(f"Error en Op 5: {e}", es_error=True)
         print(f"Error capturado: {e}")
 
+# ==============================================================================
+# 6. Clase abstracta Entidad
+Esta es una de las clases fundamentales del proyecto porque representa una estructura general que pueden compartir diferentes elementos del sistema.
+En el código encontramos:
+# ==============================================================================
+class Entidad(ABC):
+    def __init__(self, identificador=None):
+        self._id = identificador or str(uuid.uuid4())[:8]
+        self._fecha_creacion = datetime.now()
 
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def fecha_creacion(self):
+        return self._fecha_creacion
+
+    @abstractmethod
+    def validar(self):
+        pass
+
+    # ==============================================================================
+    # ¿Qué significa esta clase?
+Entidad es una clase abstracta. Esto quiere decir que sirve como modelo para otras clases y no está diseñada para crear directamente objetos generales de entidad.
+
+Contiene dos atributos:
+- _id: identifica cada objeto mediante un código único.
+- _fecha_creacion: almacena la fecha y hora en que se creó el objeto.
+También contiene el método abstracto validar().
+
+Este método obliga a las clases que heredan de Entidad a implementar sus propias validaciones.
+
+Por ejemplo:
+- Un cliente debe validar su nombre, documento, correo y teléfono.
+- Un servicio debe validar su nombre, tarifa y disponibilidad.
+- Una reserva debe validar que tenga un cliente y un servicio válidos.
+
+  # ==============================================================================
