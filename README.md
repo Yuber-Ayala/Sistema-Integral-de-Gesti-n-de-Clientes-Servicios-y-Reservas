@@ -257,6 +257,58 @@ if __name__ == "__main__":
     except SoftwareFJError as e:
         registrar_log(f"Error en Op 5: {e}", es_error=True)
         print(f"Error capturado: {e}")
+        
+    # Operación 6: Creación y confirmación de Reserva exitosa (Cliente 1 + Sala VIP)
+    print("\n--- Operación 6: Reserva exitosa con cálculo de costo (Polimorfismo) ---")
+    try:
+        r1 = Reserva("R01", c1, s1, duracion_horas=4.0)
+        costo_r1 = r1.confirmar_reserva(descuento=10.0)
+        reservas_registradas.append(r1)
+        print(f"Reserva R01 completada. Costo Total Calculado: ${costo_r1}")
+    except SoftwareFJError as e:
+        registrar_log(f"Error en Op 6: {e}", es_error=True)
+        print(f"Error capturado: {e}")
+
+    # Operación 7: Creación de Reserva con duración inválida (-2 horas) (Fallo controlado)
+    print("\n--- Operación 7: Creación de Reserva con duración negativa ---")
+    try:
+        r_error = Reserva("R02", c1, s2, duracion_horas=-2.0)
+    except SoftwareFJError as e:
+        registrar_log(f"Error en Op 7 (Captura esperada): {e}", es_error=True)
+        print(f"Excepción capturada con éxito: {e}")
+
+    # Operación 8: Confirmación de Reserva con Asesoría Especializada (Prueba de Polimorfismo)
+    print("\n--- Operación 8: Reserva de Asesoría Senior (Demostración de tarifa por nivel) ---")
+    try:
+        r2 = Reserva("R03", c1, s3, duracion_horas=3.0)
+        costo_r2 = r2.confirmar_reserva()
+        reservas_registradas.append(r2)
+        print(f"Reserva R03 completada. Costo Total Calculado: ${costo_r2}")
+    except SoftwareFJError as e:
+        registrar_log(f"Error en Op 8: {e}", es_error=True)
+        print(f"Error capturado: {e}")
+
+    # Operación 9: Cancelación de una reserva existente
+    print("\n--- Operación 9: Cancelación válida de reserva ---")
+    try:
+        r1.cancelar_reserva()
+        print(f"Estado final de R01: {r1.estado}")
+    except SoftwareFJError as e:
+        registrar_log(f"Error en Op 9: {e}", es_error=True)
+        print(f"Error capturado: {e}")
+
+    # Operación 10: Intento de cancelar una reserva ya cancelada (Fallo de lógica controlado)
+    print("\n--- Operación 10: Intento de cancelar reserva que ya estaba cancelada ---")
+    try:
+        r1.cancelar_reserva()
+    except SoftwareFJError as e:
+        registrar_log(f"Error en Op 10 (Captura esperada): {e}", es_error=True)
+        print(f"Excepción capturada con éxito: {e}")
+
+    print("\n=================================================================")
+    print("   SIMULACIÓN FINALIZADA CON ÉXITO Y SISTEMA PERMANECIÓ ESTABLE ")
+    print("   Revise el archivo 'sistema_errores.log' generado.            ")
+    print("=================================================================")
 
 # ==============================================================================
 # 6. Clase abstracta Entidad
