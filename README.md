@@ -143,54 +143,117 @@ class Servicio(EntidadBase):
         """Método abstracto para el cálculo de costos con polimorfismo y sobrecarga simulada."""
         pass
         # ==========================================
-# MODULO DE GESTION DE RESERVAS
-# Proyecto: Software FJ
-# Aporte: Gestion de reservas
-# ==========================================
 
-class ReservaInvalidaError(Exception):
-    """Error personalizado para reservas incorrectas."""
-    pass
+# ==============================================================================
+# 3. HERENCIA Y POLIMORFISMO (SERVICIOS ESPECIALIZADOS)
+# ==============================================================================
 
+class ReservaSala(Servicio):
+    """Servicio especializado 1: Reserva de salas de conferencias o reuniones."""
+    def __init__(self, id_servicio: str, nombre_servicio: str, costo_base: float, capacidad_personas: int):
+        super().__init__(id_servicio, nombre_servicio, costo_base)
+        if capacidad_personas <= 0:
+            raise DatosInvalidosError("La capacidad de la sala debe ser mayor a 0 personas.")
+        self.capacidad_personas = capacidad_personas
+
+    def calcular_costo(self, duracion_horas: float, descuento: float = 0.0, impuesto: float = 0.19) -> float:
+        if duracion_horas <= 0:
+            raise DatosInvalidosError("La duración de la reserva de sala debe ser mayor a 0 horas.")
+        
+        # Recargo si la sala es para más de 20 personas
+        recargo_capacidad = 1.2 if self.capacidad_personas > 20 else 1.0
+        subtotal = (self.costo_base * duracion_horas * recargo_capacidad) - descuento
+        costo_total = subtotal * (1 + impuesto)
+        return round(max(costo_total, 0.0), 2)
+
+    def obtener_resumen(self) -> str:
+        return f"Reserva de Sala: {self.nombre_servicio} (Capacidad: {self.capacidad_personas} personas)"
+
+
+class AlquilerEquipo(Servicio):
+    """Servicio especializado 2: Alquiler de equipos tecnológicos."""
+    def __init__(self, id_servicio: str, nombre_servicio: str, costo_base: float, requiere_deposito: bool = True):
+        super().__init__(id_servicio, nombre_servicio, costo_base)
+        self.requiere_deposito = requiere_deposito
+
+    def calcular_costo(self, duracion_horas: float, descuento: float = 0.0, impuesto: float = 0.19) -> float:
+        if duracion_horas <= 0:
+            raise DatosInvalidosError("La duración del alquiler de equipo debe ser mayor a 0 horas.")
+        
+        deposito = 50.0 if self.requiere_deposito else 0.0
+        subtotal = (self.costo_base * duracion_horas) - descuento
+        costo_total = (subtotal * (1 + impuesto)) + deposito
+        return round(max(costo_total, 0.0), 2)
+
+    def obtener_resumen(self) -> str:
+        dep_texto = "Sí" if self.requiere_deposito else "No"
+        return f"Alquiler de Equipo: {self.nombre_servicio} (Garantía/Depósito: {dep_texto})"
+
+
+class AsesoriaEspecializada(Servicio):
+    """Servicio especializado 3: Asesorías técnicas o de consultoría."""
+    def __init__(self, id_servicio: str, nombre_servicio: str, costo_base: float, nivel_consultor: str):
+        super().__init__(id_servicio, nombre_servicio, costo_base)
+        if nivel_consultor.upper() not in ["JUNIOR", "SENIOR", "EXPERT"]:
+            raise DatosInvalidosError("El nivel del consultor debe ser JUNIOR, SENIOR o EXPERT.")
+        self.nivel_consultor = nivel_consultor.upper()
+
+    def calcular_costo(self, duracion_horas: float, descuento: float = 0.0, impuesto: float = 0.19) -> float:
+        if duracion_horas <= 0:
+            raise DatosInvalidosError("La duración de la asesoría debe ser mayor a 0 horas.")
+        
+        multiplicadores = {"JUNIOR": 1.0, "SENIOR": 1.5, "EXPERT": 2.0}
+        factor = multiplicadores.get(self.nivel_consultor, 1.0)
+        
+        subtotal = (self.costo_base * duracion_horas * factor) - descuento
+        costo_total = subtotal * (1 + impuesto)
+        return round(max(costo_total, 0.0), 2)
+
+    def obtener_resumen(self) -> str:
+        return f"Asesoría Especializada: {self.nombre_servicio} (Consultor Nivel: {self.nivel_consultor})"
+
+
+# ==============================================================================
+# 4. CLASE RESERVA Y GESTIÓN DE PROCESOS
+# ==============================================================================
 
 class Reserva:
-    """Clase encargada de gestionar las reservas."""
-
-    def __init__(self, id_reserva, cliente, servicio, duracion_horas):
-
-        if not id_reserva:
-            raise ReservaInvalidaError("El ID de reserva es obligatorio.")
-
-        if cliente is None or servicio is None:
-            raise ReservaInvalidaError("Debe existir un cliente y un servicio.")
-
+    """Clase que integra Cliente, Servicio, Duración y Estado de la operación."""
+    def __init__(self, id_reserva: str, cliente: Cliente, servicio: Servicio, duracion_horas: float):
+        if not isinstance(cliente, Cliente):
+            raise DatosInvalidosError("El objeto cliente proporcionado no es válido.")
+        if not isinstance(servicio, Servicio):
+            raise DatosInvalidosError("El objeto servicio proporcionado no es válido.")
         if duracion_horas <= 0:
-            raise ReservaInvalidaError("La duración debe ser mayor que cero.")
+            raise DatosInvalidosError("La duración de la reserva debe ser estrictamente mayor a 0.")
 
-        self.__id_reserva = id_reserva
-        self.__cliente = cliente
-        self.__servicio = servicio
-        self.__duracion_horas = duracion_horas
-        self.__estado = "Pendiente"
+        self.id_reserva = id_reserva
+        self.cliente = cliente
+        self.servicio = servicio
+        self.duracion_horas = duracion_horas
+        self.estado = "PENDIENTE"
+        self.costo_calculado = 0.0
 
-    @property
-    def estado(self):
-        return self.__estado
+    def confirmar_reserva(self, descuento: float = 0.0) -> float:
+        """Confirma la reserva calculando el costo total con manejo de excepciones y bloques else/finally."""
+        try:
+            # Polimorfismo en ejecución al llamar a calcular_costo()
+            self.costo_calculado = self.servicio.calcular_costo(self.duracion_horas, descuento=descuento)
+        except DatosInvalidosError as e:
+            # Encadamiento de excepciones
+            raise ReservaInvalidaError(f"No se pudo confirmar la reserva {self.id_reserva} por parámetros inválidos.") from e
+        else:
+            self.estado = "CONFIRMADA"
+            registrar_log(f"Reserva {self.id_reserva} CONFIRMADA exitosamente para el cliente {self.cliente.nombre}. Costo: ${self.costo_calculado}")
+            return self.costo_calculado
+        finally:
+            print(f"[Procesamiento Reserva {self.id_reserva}] Intento de confirmación finalizado (Estado actual: {self.estado}).")
 
-    def confirmar(self):
-        if self.__estado != "Pendiente":
-            raise ReservaInvalidaError("La reserva no se puede confirmar.")
-
-        self.__estado = "Confirmada"
-        return "Reserva confirmada correctamente."
-
-    def cancelar(self):
-        if self.__estado == "Cancelada":
-            raise ReservaInvalidaError("La reserva ya está cancelada.")
-
-        self.__estado = "Cancelada"
-        return "Reserva cancelada correctamente."
-
+    def cancelar_reserva(self):
+        if self.estado == "CANCELADA":
+            raise ReservaInvalidaError(f"La reserva {self.id_reserva} ya se encontraba cancelada.")
+        self.estado = "CANCELADA"
+        registrar_log(f"Reserva {self.id_reserva} CANCELADA.")
 
 
 # ==============================================================================
@@ -257,7 +320,7 @@ if __name__ == "__main__":
     except SoftwareFJError as e:
         registrar_log(f"Error en Op 5: {e}", es_error=True)
         print(f"Error capturado: {e}")
-        
+
     # Operación 6: Creación y confirmación de Reserva exitosa (Cliente 1 + Sala VIP)
     print("\n--- Operación 6: Reserva exitosa con cálculo de costo (Polimorfismo) ---")
     try:
@@ -309,43 +372,3 @@ if __name__ == "__main__":
     print("   SIMULACIÓN FINALIZADA CON ÉXITO Y SISTEMA PERMANECIÓ ESTABLE ")
     print("   Revise el archivo 'sistema_errores.log' generado.            ")
     print("=================================================================")
-
-# ==============================================================================
-# 6. Clase abstracta Entidad
-Esta es una de las clases fundamentales del proyecto porque representa una estructura general que pueden compartir diferentes elementos del sistema.
-En el código encontramos:
-# ==============================================================================
-class Entidad(ABC):
-    def __init__(self, identificador=None):
-        self._id = identificador or str(uuid.uuid4())[:8]
-        self._fecha_creacion = datetime.now()
-
-    @property
-    def id(self):
-        return self._id
-
-    @property
-    def fecha_creacion(self):
-        return self._fecha_creacion
-
-    @abstractmethod
-    def validar(self):
-        pass
-
-    # ==============================================================================
-    # ¿Qué significa esta clase?
-Entidad es una clase abstracta. Esto quiere decir que sirve como modelo para otras clases y no está diseñada para crear directamente objetos generales de entidad.
-
-Contiene dos atributos:
-- _id: identifica cada objeto mediante un código único.
-- _fecha_creacion: almacena la fecha y hora en que se creó el objeto.
-También contiene el método abstracto validar().
-
-Este método obliga a las clases que heredan de Entidad a implementar sus propias validaciones.
-
-Por ejemplo:
-- Un cliente debe validar su nombre, documento, correo y teléfono.
-- Un servicio debe validar su nombre, tarifa y disponibilidad.
-- Una reserva debe validar que tenga un cliente y un servicio válidos.
-
-  # ==============================================================================
